@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}My Tasks · TaskFlow{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>My Tasks</h1>
+  <p class="subtitle">Stay organised, one task at a time.</p>
+</section>
+
+<section class="stats">
+  <div class="stat-card">
+    <span class="stat-number">{{ total }}</span>
+    <span class="stat-label">Total</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-number">{{ pending }}</span>
+    <span class="stat-label">Pending</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-number">{{ completed }}</span>
+    <span class="stat-label">Completed</span>
+  </div>
+</section>
+
+{% if total > 0 %}
+  {% set percent = (completed / total * 100) | round | int %}
+  <div class="progress">
+    <div class="progress-bar" style="width: {{ percent }}%"></div>
+  </div>
+  <p class="progress-text">{{ percent }}% complete</p>
+{% endif %}
+
+<form class="card add-form" action="{{ url_for('tasks.create') }}" method="POST">
+  <input type="text" name="title" placeholder="What needs to be done?" required maxlength="200" autofocus>
+  <input type="text" name="description" placeholder="Add a description (optional)">
+  <button type="submit" class="btn btn-primary">+ Add Task</button>
+</form>
+
+<nav class="filters">
+  {% for key, label in [("all", "All"), ("active", "Active"), ("completed", "Completed")] %}
+    <a href="{{ url_for('tasks.index', filter=key) }}"
+       class="filter {% if current_filter == key %}active{% endif %}">{{ label }}</a>
+  {% endfor %}
+</nav>
+
+{% if tasks %}
+  <ul class="task-list">
+    {% for task in tasks %}
+      <li class="task {% if task.is_completed %}done{% endif %}">
+        <form action="{{ url_for('tasks.toggle', task_id=task.id) }}" method="POST">
+          <button type="submit" class="check"
+                  title="{{ 'Mark as pending' if task.is_completed else 'Mark as done' }}">
+            {% if task.is_completed %}✓{% endif %}
+          </button>
+        </form>
+
+        <div class="task-body">
+          <p class="task-title">{{ task.title }}</p>
+          {% if task.description %}
+            <p class="task-desc">{{ task.description }}</p>
+          {% endif %}
+          <p class="task-meta">Created {{ task.created_at | localtime }}</p>
+        </div>
+
+        <div class="task-actions">
+          <a href="{{ url_for('tasks.edit', task_id=task.id) }}" class="icon-btn" title="Edit">✎</a>
+          <form action="{{ url_for('tasks.delete', task_id=task.id) }}" method="POST"
+                onsubmit="return confirm('Delete this task?');">
+            <button type="submit" class="icon-btn danger" title="Delete">🗑</button>
+          </form>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="empty">
+    <p class="empty-icon">📝</p>
+    {% if current_filter == "all" %}
+      <p>No tasks yet. Add your first one above!</p>
+    {% else %}
+      <p>No {{ current_filter }} tasks.</p>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}
